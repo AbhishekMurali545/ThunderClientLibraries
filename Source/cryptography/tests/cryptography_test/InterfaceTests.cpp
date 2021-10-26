@@ -44,6 +44,10 @@ TEST(Vault, ImportExport)
     if (id != 0) {
         uint8_t* output = new uint8_t[sizeof(testVector)];
         EXPECT_EQ(vault->Export(id, sizeof(testVector), output), sizeof(testVector));
+/*
+ *This step will be executed for OpenSSL implementation only, as in other implementation
+ *Only reference to the input buffer will be return by Export function
+*/
 #ifdef OpenSSL
 	EXPECT_EQ(::memcmp(testVector, output, sizeof(testVector)), 0);
 #endif
@@ -148,6 +152,10 @@ TEST(Hash, HMAC)
             EXPECT_EQ(hashImpl->Calculate(0, output), 0);
             EXPECT_EQ(hashImpl->Calculate(128, output), sizeof(hash_sha256));
             DumpBuffer(output, sizeof(hash_sha256));
+/*
+ *This step will be executed for OpenSSL implementation only, as in other implementation
+ *Only reference to the output is passed by Calculate
+*/
 #ifdef OpenSSL
             EXPECT_EQ(::memcmp(output, hash_sha256, sizeof(hash_sha256)), 0);
 #endif
@@ -292,7 +300,6 @@ TEST(DH, Generate)
 int main(int argc, char **argv)
 {
     cg = WPEFramework::Cryptography::ICryptography::Instance("");
-    bool instance = false;
     int len;
     if (cg != nullptr) {
 
@@ -303,22 +310,20 @@ int main(int argc, char **argv)
             {
 		 printf("\nAcquiring Netflix instance\n");
                  vault = cg->Vault(cryptographyvault::CRYPTOGRAPHY_VAULT_NETFLIX);
-		 instance = true;
             }
 	    else if ( (len == 9) && !strncmp( (const char*)argv[i], "--DEFAULT", len) )
             {
 		 printf("\nAcquiring DEFAULT instance\n");
 	         vault = cg->Vault(cryptographyvault::CRYPTOGRAPHY_VAULT_DEFAULT);
-		 instance = true;
             }
 	    else if ( (len == 10) && !strncmp( (const char*)argv[i], "--PLATFORM", len) )
             {
 		 printf("\nAcquiring PLATFORM instance\n");
 		 vault = cg->Vault(cryptographyvault::CRYPTOGRAPHY_VAULT_PLATFORM);
-		 instance = true;
 	    }
          }
-	if (!instance)
+	//Acquire NETFLIX instance if no argument is passed
+	if (vault == nullptr)
 	    vault = cg->Vault(cryptographyvault::CRYPTOGRAPHY_VAULT_NETFLIX);
         if (vault != nullptr) {
             CALL(Vault, ImportExport);
